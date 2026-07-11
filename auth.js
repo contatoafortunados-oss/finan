@@ -27,6 +27,7 @@
     form.querySelector('button[type="submit"]').textContent = 'Salvar nova senha';
   }
   if (getSession()?.access_token && !recoverySession) screen.remove();
+  toggle?.setAttribute('aria-label', 'Mostrar ou ocultar senha');
   toggle?.addEventListener('click', () => { const input = form.elements.password; input.type = input.type === 'password' ? 'text' : 'password'; toggle.textContent = input.type === 'password' ? 'Mostrar' : 'Ocultar'; });
   form?.addEventListener('submit', async (event) => {
     event.preventDefault(); error.classList.remove('show');
