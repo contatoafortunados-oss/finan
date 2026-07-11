@@ -20,5 +20,5 @@
     } finally { loading = false; }
   };
   const observer = new MutationObserver(() => { const content = document.getElementById('content'); if (content?.dataset.realDashboard === 'true' && window.financeState?.view !== 'dashboard') delete content.dataset.realDashboard; renderReal(); });
-  observer.observe(document.getElementById('content'), { childList: true, subtree: true }); renderReal();
+  observer.observe(document.getElementById('content'), { childList: true, subtree: true }); window.addEventListener('clareza:authenticated', renderReal); renderReal();
 })();

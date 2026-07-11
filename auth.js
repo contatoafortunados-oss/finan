@@ -27,7 +27,7 @@
     form.elements.password.placeholder = 'Nova senha';
     form.querySelector('button[type="submit"]').textContent = 'Salvar nova senha';
   }
-  if (getSession()?.access_token && !recoverySession) screen.remove();
+  if (getSession()?.access_token && !recoverySession) { screen.remove(); window.dispatchEvent(new Event('clareza:authenticated')); }
   toggle?.setAttribute('aria-label', 'Mostrar ou ocultar senha');
   toggle?.addEventListener('click', () => { const input = form.elements.password; input.type = input.type === 'password' ? 'text' : 'password'; toggle.textContent = input.type === 'password' ? 'Mostrar' : 'Ocultar'; });
   forgot?.addEventListener('click', async () => {
@@ -57,7 +57,7 @@
         document.querySelector('.auth-copy h1').textContent = 'Senha atualizada'; document.querySelector('.auth-copy>p:last-child').textContent = 'Agora entre com sua nova senha.'; return;
       }
       const email = String(data.get('email') || '').trim(); if (!email) return showError('Informe seu email.');
-      saveSession(await authRequest('/auth/v1/token?grant_type=password', { method: 'POST', body: JSON.stringify({ email, password }) })); screen.remove();
+      saveSession(await authRequest('/auth/v1/token?grant_type=password', { method: 'POST', body: JSON.stringify({ email, password }) })); screen.remove(); window.dispatchEvent(new Event('clareza:authenticated'));
     } catch (caught) { showError(caught.message); }
   });
   const logout = document.getElementById('logout') || (() => { const button = document.createElement('button'); button.id = 'logout'; button.className = 'nav-item'; button.textContent = '↪ Sair'; document.querySelector('.sidebar-bottom')?.prepend(button); return button; })();
