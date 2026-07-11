@@ -3,10 +3,11 @@
   const form = document.getElementById('login-form');
   const error = document.getElementById('login-error');
   const toggle = document.getElementById('toggle-password');
+  const forgot = document.getElementById('forgot-password');
   const sessionKey = 'clareza_supabase_session';
   const config = window.CLAREZA_SUPABASE || {};
   let recoverySession = null;
-  const showError = (message) => { error.textContent = message; error.classList.add('show'); };
+  const showError = (message) => { error.textContent = message; error.style.color = 'var(--red)'; error.classList.add('show'); };
   const saveSession = (session) => sessionStorage.setItem(sessionKey, JSON.stringify(session));
   const getSession = () => { try { return JSON.parse(sessionStorage.getItem(sessionKey) || 'null'); } catch { return null; } };
   const authRequest = async (path, options = {}) => {
@@ -29,6 +30,22 @@
   if (getSession()?.access_token && !recoverySession) screen.remove();
   toggle?.setAttribute('aria-label', 'Mostrar ou ocultar senha');
   toggle?.addEventListener('click', () => { const input = form.elements.password; input.type = input.type === 'password' ? 'text' : 'password'; toggle.textContent = input.type === 'password' ? 'Mostrar' : 'Ocultar'; });
+  forgot?.addEventListener('click', async () => {
+    error.classList.remove('show');
+    const email = String(form.elements.email.value || '').trim();
+    if (!email) return showError('Informe seu email antes de solicitar a recuperação.');
+    forgot.disabled = true;
+    try {
+      await authRequest('/auth/v1/recover', { method: 'POST', body: JSON.stringify({ email }) });
+      error.textContent = 'Se o email estiver cadastrado, enviaremos um link de recuperação.';
+      error.classList.add('show');
+      error.style.color = 'var(--green)';
+    } catch (caught) {
+      showError(caught.message);
+    } finally {
+      forgot.disabled = false;
+    }
+  });
   form?.addEventListener('submit', async (event) => {
     event.preventDefault(); error.classList.remove('show');
     const data = new FormData(form); const password = String(data.get('password') || '');
