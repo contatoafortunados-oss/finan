@@ -1,0 +1,16 @@
+project_id = "tdpejvjsdskrhpkgzkgs"
+
+[api]
+enabled = true
+
+[db]
+major_version = 17
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:5173", "https://finan.vercel.app"]
+
+[storage]
+enabled = true
+file_size_limit = "10MiB"
