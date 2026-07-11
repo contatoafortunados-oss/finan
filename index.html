@@ -5,8 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Clareza — Organização financeira</title>
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="auth.css" />
 </head>
 <body>
+  <section class="auth-screen" id="auth-screen">
+    <div class="auth-card">
+      <div class="brand auth-brand"><span class="brand-mark">C</span><div><strong>clareza</strong><small>finanças pessoais</small></div></div>
+      <div class="auth-copy"><p class="eyebrow">ÁREA PRIVADA</p><h1>Bem-vindo de volta</h1><p>Entre para acessar sua organização financeira.</p></div>
+      <form id="login-form" class="login-form">
+        <label>Email<input name="email" type="email" autocomplete="email" placeholder="seu@email.com" required /></label>
+        <label>Senha<div class="password-field"><input name="password" type="password" autocomplete="current-password" placeholder="••••••••" required minlength="6" /><button type="button" id="toggle-password">Mostrar</button></div></label>
+        <div class="login-options"><label class="checkbox"><input type="checkbox" name="remember" checked /> Lembrar acesso</label><button type="button" class="text-button">Esqueci minha senha</button></div>
+        <p class="login-error" id="login-error"></p><button class="primary full" type="submit">Entrar com segurança</button>
+      </form>
+      <p class="auth-note">Acesso restrito ao proprietário da conta.</p>
+    </div>
+  </section>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand"><span class="brand-mark">C</span><div><strong>clareza</strong><small>finanças pessoais</small></div></div>
@@ -25,5 +39,6 @@
   </div>
   <div class="modal-backdrop" id="modal"><div class="modal"><button class="modal-close" id="close-modal">×</button><h2>Novo lançamento</h2><p class="muted">Registre uma entrada ou saída para atualizar sua visão financeira.</p><form id="entry-form"><div class="form-grid"><label>Tipo<select name="type"><option value="expense">Despesa</option><option value="income">Receita</option></select></label><label>Descrição<input required name="description" placeholder="Ex.: Mercado" /></label><label>Valor<input required name="amount" type="number" step="0.01" placeholder="0,00" /></label><label>Categoria<select name="category"><option>Moradia</option><option>Alimentação</option><option>Transporte</option><option>Saúde</option><option>Lazer</option><option>Assinaturas</option><option>Outros</option></select></label><label>Data<input name="date" type="date" value="2026-07-11" /></label><label>Status<select name="status"><option>Pago</option><option>Pendente</option><option>Previsto</option></select></label></div><button class="primary full" type="submit">Salvar lançamento</button></form></div></div>
   <script src="app.js"></script>
+  <script src="auth.js"></script>
 </body>
 </html>
