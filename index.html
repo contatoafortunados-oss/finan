@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clareza — Organização financeira</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">C</span><div><strong>clareza</strong><small>finanças pessoais</small></div></div>
+      <nav id="nav">
+        <button class="nav-item active" data-view="dashboard"><span>⌂</span> Visão geral</button>
+        <button class="nav-item" data-view="transactions"><span>↕</span> Lançamentos</button>
+        <button class="nav-item" data-view="cards"><span>▣</span> Cartões e faturas</button>
+        <button class="nav-item" data-view="projection"><span>⌁</span> Projeção</button>
+        <button class="nav-item" data-view="budget"><span>◔</span> Orçamento</button>
+        <button class="nav-item" data-view="goals"><span>◎</span> Metas</button>
+        <button class="nav-item" data-view="import"><span>⇧</span> Importar dados</button>
+      </nav>
+      <div class="sidebar-bottom"><button class="nav-item" data-view="settings"><span>⚙</span> Configurações</button><div class="profile"><div class="avatar">RC</div><div><strong>Minha família</strong><small>Plano pessoal</small></div><span>•••</span></div></div>
+    </aside>
+    <main class="main"><header class="topbar"><button class="mobile-menu" id="menu">☰</button><div><p class="eyebrow" id="eyebrow">SEGUNDA, 11 DE JULHO DE 2026</p><h1 id="page-title">Visão geral</h1></div><div class="top-actions"><button class="icon-btn" title="Notificações">♧<i></i></button><button class="primary" id="new-entry">+ Novo lançamento</button></div></header><section id="content"></section></main>
+  </div>
+  <div class="modal-backdrop" id="modal"><div class="modal"><button class="modal-close" id="close-modal">×</button><h2>Novo lançamento</h2><p class="muted">Registre uma entrada ou saída para atualizar sua visão financeira.</p><form id="entry-form"><div class="form-grid"><label>Tipo<select name="type"><option value="expense">Despesa</option><option value="income">Receita</option></select></label><label>Descrição<input required name="description" placeholder="Ex.: Mercado" /></label><label>Valor<input required name="amount" type="number" step="0.01" placeholder="0,00" /></label><label>Categoria<select name="category"><option>Moradia</option><option>Alimentação</option><option>Transporte</option><option>Saúde</option><option>Lazer</option><option>Assinaturas</option><option>Outros</option></select></label><label>Data<input name="date" type="date" value="2026-07-11" /></label><label>Status<select name="status"><option>Pago</option><option>Pendente</option><option>Previsto</option></select></label></div><button class="primary full" type="submit">Salvar lançamento</button></form></div></div>
+  <script src="app.js"></script>
+</body>
+</html>
