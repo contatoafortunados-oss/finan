@@ -3,7 +3,13 @@ from __future__ import annotations
 import hashlib, json, re, sys
 from datetime import datetime
 from pathlib import Path
-from pypdf import PdfReader
+try:
+    from pypdf import PdfReader
+    PDF_BACKEND = 'pypdf'
+except ModuleNotFoundError:
+    import fitz
+    PdfReader = None
+    PDF_BACKEND = 'fitz'
 
 ROOT = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(r"C:\Users\rc-19\Desktop\Rodrigo\FINAN")
 MONTHS = {'janeiro':'01','fevereiro':'02','março':'03','abril':'04','maio':'05','junho':'06','julho':'07','agosto':'08','setembro':'09','outubro':'10','novembro':'11','dezembro':'12'}
@@ -15,6 +21,9 @@ def br(value: str | None):
     except ValueError: return None
 
 def text(pdf: Path):
+    if PDF_BACKEND == 'fitz':
+        with fitz.open(str(pdf)) as document:
+            return '\n'.join(page.get_text('text') for page in document)
     reader = PdfReader(str(pdf))
     # Itaú PDFs with embedded text sometimes return one character per line;
     # layout mode preserves enough positioning to read the statement header.
@@ -22,6 +31,9 @@ def text(pdf: Path):
     return '\n'.join((page.extract_text(extraction_mode=mode) if mode else page.extract_text() or '') for page in reader.pages)
 
 def pages(pdf: Path):
+    if PDF_BACKEND == 'fitz':
+        with fitz.open(str(pdf)) as document:
+            return [(i + 1, page.get_text('text')) for i, page in enumerate(document)]
     reader = PdfReader(str(pdf)); mode = 'layout' if pdf.name.lower().startswith('fatura_itau') else None
     return [(i + 1, page.extract_text(extraction_mode=mode) if mode else page.extract_text() or '') for i, page in enumerate(reader.pages)]
 
@@ -31,7 +43,8 @@ def first(pattern, source, flags=re.I):
 
 def parse(pdf: Path):
     raw = text(pdf); flat = ' '.join(raw.split()); issuer = 'Nubank' if pdf.name.lower().startswith('nubank') else 'PicPay' if pdf.name.lower().startswith('picpay') else 'Itaú'
-    record = {'filename': pdf.name, 'format':'PDF', 'issuer':issuer, 'sha256':hashlib.sha256(pdf.read_bytes()).hexdigest(), 'bytes':pdf.stat().st_size, 'pages':len(PdfReader(str(pdf)).pages), 'status':'needs_review', 'transactions':[], 'raw_summary':{}}
+    page_count = len(fitz.open(str(pdf))) if PDF_BACKEND == 'fitz' else len(PdfReader(str(pdf)).pages)
+    record = {'filename': pdf.name, 'format':'PDF', 'issuer':issuer, 'sha256':hashlib.sha256(pdf.read_bytes()).hexdigest(), 'bytes':pdf.stat().st_size, 'pages':page_count, 'status':'needs_review', 'transactions':[], 'raw_summary':{}}
     if issuer == 'Nubank':
         record['reference_month'] = first(r'fatura de ([a-zç]+)', flat)
         record['due_date'] = first(r'Data de vencimento:\s*(\d{1,2} [A-Z]{3} \d{4})', flat)
@@ -71,4 +84,4 @@ seen = {}; duplicates=[]
 for item in results:
     if item['sha256'] in seen: duplicates.append({'filename':item['filename'], 'duplicate_of':seen[item['sha256']]})
     else: seen[item['sha256']] = item['filename']
-print(json.dumps({'source_directory':str(ROOT), 'files':results, 'duplicates':duplicates, 'read_only':True}, ensure_ascii=False, indent=2))
+print(json.dumps({'source_directory':str(ROOT), 'pdf_backend':PDF_BACKEND, 'files':results, 'duplicates':duplicates, 'read_only':True}, ensure_ascii=False, indent=2))
