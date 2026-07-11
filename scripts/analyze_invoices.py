@@ -21,6 +21,10 @@ def text(pdf: Path):
     mode = 'layout' if pdf.name.lower().startswith('fatura_itau') else None
     return '\n'.join((page.extract_text(extraction_mode=mode) if mode else page.extract_text() or '') for page in reader.pages)
 
+def pages(pdf: Path):
+    reader = PdfReader(str(pdf)); mode = 'layout' if pdf.name.lower().startswith('fatura_itau') else None
+    return [(i + 1, page.extract_text(extraction_mode=mode) if mode else page.extract_text() or '') for i, page in enumerate(reader.pages)]
+
 def first(pattern, source, flags=re.I):
     match = re.search(pattern, source, flags)
     return match.group(1).strip() if match else None
@@ -44,9 +48,21 @@ def parse(pdf: Path):
     else:
         record['due_date'] = first(r'Vencimento:\s*(\d{2}/\d{2}/\d{4})', flat); record['closed_at'] = first(r'Emissão:\s*(\d{2}/\d{2}/\d{4})', flat); record['total'] = br(first(r'Total\s*desta?\s*fatura\s*([\d.,]+)', flat)); record['card'] = first(r'Cartão\s+([\dX.]+)', flat)
         record['raw_summary'] = {'previous':br(first(r'Total\s*da\s*fatura\s*anterior\s*([\d.,]+)', flat)), 'payments':br(first(r'Pagamentos?\s*efetuados?\s*([-\d.,]+)', flat)), 'current':br(first(r'Lançamentos\s*atuais\s*([\d.,]+)', flat))}
+        for page_no, page_text in pages(pdf):
+            compact = ''.join(page_text.lower().split())
+            if 'lançamentos' not in compact or 'data' not in compact or 'valor' not in compact: continue
+            for match in re.finditer(r'(\d{2}/\d{2})\s+(.+?)\s+([-−]?[\d.]+,\d{2})(?=\s|$)', page_text):
+                description = ' '.join(match.group(2).split()).strip()
+                if description.lower().startswith(('data estabelecimento','lançamentos no cartão')): continue
+                amount = br(match.group(3).replace('−','-')); installment = re.search(r'parc(?:ela)?\s*(\d{1,2})\s*/\s*(\d{1,2})', description, re.I)
+                kind = 'payment' if 'pagamento' in description.lower() else 'credit' if amount is not None and amount < 0 else 'expense'
+                record['transactions'].append({'date':match.group(1), 'original_description':description, 'amount':amount, 'type':kind, 'confidence':'medium', 'page':page_no, 'installment_number':int(installment.group(1)) if installment else None, 'installment_total':int(installment.group(2)) if installment else None})
     # A header total alone is not enough: Itaú OCR-layout statements still
     # require manual line-item review when no transaction rows were extracted.
-    record['status'] = 'ready_for_review' if record['total'] is not None and not (issuer == 'Itaú' and not record['transactions']) else 'needs_review'
+    extracted_sum = round(sum((float(row.get('amount') or 0) for row in record['transactions'])), 2)
+    record['extracted_total'] = extracted_sum
+    record['difference'] = round((record['total'] or 0) - extracted_sum, 2) if record['total'] is not None else None
+    record['status'] = 'ready_for_review' if record['total'] is not None and record['transactions'] and abs(record['difference'] or 0) <= 0.01 else 'needs_review'
     return record
 
 files = sorted(ROOT.glob('*.pdf'))
