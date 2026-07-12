@@ -1,0 +1,21 @@
+(() => {
+  const money = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value) || 0);
+  const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
+  const hasSession = () => { try { return Boolean(JSON.parse(sessionStorage.getItem('clareza_supabase_session') || 'null')?.access_token); } catch { return false; } };
+  let loading = false;
+  const render = async () => {
+    if (loading || !hasSession() || window.financeState?.view !== 'transactions' || !window.clarezaDb) return;
+    const content = document.getElementById('content'); if (!content || content.dataset.realTransactions === 'true') return;
+    loading = true; content.dataset.realTransactions = 'true';
+    try {
+      const [official, imported] = await Promise.all([window.clarezaDb.select('transactions', '?select=*'), window.clarezaDb.select('import_rows', '?review_status=eq.approved&select=*')]);
+      const rows = [...official, ...imported.map((item) => ({ ...item, description: item.normalized_description || item.original_description || 'Lançamento importado', category: item.raw_data?.category || 'Não classificado', transaction_date: item.transaction_date || item.raw_data?.source_date || '', status: 'Importado', source: 'import' }))];
+      content.innerHTML = `<div class="section-title"><div><h2>Lançamentos</h2><p class="muted">Registros oficiais e importações aprovadas do Supabase.</p></div><button class="primary" id="new-entry-2">+ Novo lançamento</button></div><div class="card"><div class="filters"><input id="real-search" placeholder="⌕ Buscar lançamento" /><select id="real-type"><option value="">Todos os tipos</option><option value="income">Receitas</option><option value="expense">Despesas</option></select><select id="real-source"><option value="">Todas as origens</option><option value="official">Oficiais</option><option value="import">Importadas</option></select></div><div class="table-wrap"><table class="data-table"><thead><tr><th>DESCRIÇÃO</th><th>CATEGORIA</th><th>DATA</th><th>ORIGEM</th><th>VALOR</th><th>STATUS</th></tr></thead><tbody id="real-transactions-body"></tbody></table></div></div>`;
+      const paint = () => { const term = (document.getElementById('real-search').value || '').toLowerCase(), type = document.getElementById('real-type').value, source = document.getElementById('real-source').value; const filtered = rows.filter((item) => (!term || String(item.description || '').toLowerCase().includes(term)) && (!type || (item.type === type || (type === 'expense' && item.type !== 'income'))) && (!source || (item.source || 'official') === source)); document.getElementById('real-transactions-body').innerHTML = filtered.length ? filtered.map((item) => `<tr><td><strong>${esc(item.description)}</strong></td><td>${esc(item.category || 'Não classificado')}</td><td>${item.transaction_date ? new Date(`${item.transaction_date}T12:00:00`).toLocaleDateString('pt-BR') : 'Data pendente'}</td><td><span class="pill">${item.source === 'import' ? 'Importada' : 'Oficial'}</span></td><td class="${item.type === 'income' ? 'up' : 'down'}">${item.type === 'income' ? '+' : '-'} ${money(item.amount)}</td><td><span class="pill">${esc(item.status || 'Registrado')}</span></td></tr>`).join('') : '<tr><td colspan="6" class="empty-note">Nenhum lançamento encontrado.</td></tr>'; };
+      ['real-search', 'real-type', 'real-source'].forEach((id) => document.getElementById(id).addEventListener('input', paint)); paint(); document.getElementById('new-entry-2').onclick = () => document.getElementById('new-entry')?.click();
+    } catch (error) { content.innerHTML = `<div class="card"><h2>Não foi possível carregar os lançamentos</h2><p class="muted">${esc(error.message)}</p></div>`; }
+    finally { loading = false; }
+  };
+  const observer = new MutationObserver(() => { const content = document.getElementById('content'); if (content?.dataset.realTransactions === 'true' && window.financeState?.view !== 'transactions') delete content.dataset.realTransactions; render(); });
+  observer.observe(document.getElementById('content'), { childList: true, subtree: true }); render();
+})();
