@@ -25,7 +25,11 @@
     const bank = /ita[uú]/i.test(source) ? 'Itaú' : /nubank/i.test(source) ? 'Nubank' : /picpay/i.test(source) ? 'PicPay' : '';
     const cardMatch = source.match(/(?:final|cart[aã]o|card)[^\d]{0,12}(\d{4})/i) || source.match(/(?:\.|\s)(\d{4})(?:\D|$)/);
     const refMatch = source.match(/(?:refer[eê]ncia|fatura|m[eê]s)[^\d]{0,12}(0?[1-9]|1[0-2])\s*[\/-]\s*(20\d{2})/i) || fileName.match(/(20\d{2})[^\d]?(0[1-9]|1[0-2])/);
-    return { bank, card: cardMatch?.[1] || '', referenceMonth: refMatch ? `${String(refMatch[1]).padStart(2, '0')}/${refMatch[2]}` : '' };
+    const values = rows.flatMap((row) => Object.entries(row));
+    const due = values.find(([key]) => ['vencimento', 'datadevencimento', 'duedate'].includes(normalize(key)));
+    const dueDate = due ? date(due[1]) : '';
+    const dueReference = dueDate.match(/^(\d{4})-(\d{2})-/);
+    return { bank, card: cardMatch?.[1] || '', dueDate, referenceMonth: refMatch ? `${String(refMatch[1]).padStart(2, '0')}/${refMatch[2]}` : dueReference ? `${dueReference[2]}/${dueReference[1]}` : '' };
   };
   const suggestCategory = (description) => {
     const value = normalize(description);
@@ -53,7 +57,7 @@
       return { id: crypto.randomUUID(), sourceRow: index + 2, date: date(get('data', 'datadacompra', 'transactiondate')), original, normalized: merchant, merchant, amount: Math.abs(money(get('valor', 'amount', 'preco'))), type, category: text(get('categoria', 'category')) || suggested, subcategory: text(get('subcategoria', 'subcategory')), note: `Importado da planilha ${file.name}, aba ${primary?.name || 'desconhecida'}, linha ${index + 2}.`, confidence: suggested ? 'Média' : 'Não classificado', reviewStatus: 'Pendente' };
     }).filter((row) => row.original || row.amount);
     const meta = metadata(file.name, primary?.rows || []);
-    return { fileName: file.name, size: file.size, importedAt: new Date().toISOString(), ...meta, sheets: sheets.map((sheet) => ({ name: sheet.name, count: sheet.rows.length })), sheetName: primary?.name || '', rows: rows.map((row) => ({ ...row, sourceDate: row.date, date: completeDate(row.date, meta.referenceMonth, file.name), bank: meta.bank, card: meta.card, referenceMonth: meta.referenceMonth, note: row.date && !completeDate(row.date, meta.referenceMonth, file.name) ? `${row.note} Data incompleta: ano pendente.` : row.note })) };
+    return { fileName: file.name, size: file.size, importedAt: new Date().toISOString(), ...meta, sheets: sheets.map((sheet) => ({ name: sheet.name, count: sheet.rows.length })), sheetName: primary?.name || '', rows: rows.map((row) => ({ ...row, sourceDate: row.date, date: completeDate(row.date, meta.referenceMonth, file.name), bank: meta.bank, card: meta.card, dueDate: meta.dueDate, referenceMonth: meta.referenceMonth, note: row.date && !completeDate(row.date, meta.referenceMonth, file.name) ? `${row.note} Data incompleta: ano pendente.` : row.note })) };
   };
   window.ClarezaSpreadsheet = { KEY, read, parse };
 })();
