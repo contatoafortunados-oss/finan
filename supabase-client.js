@@ -25,7 +25,10 @@
     const body = await response.json().catch(() => ({}));
     if (response.status === 401 && !retried && await refreshSession()) return request(table, options, true);
     if (!response.ok) throw new Error(response.status === 401 ? 'Sessão expirada. Entre novamente.' : body.message || body.hint || 'Não foi possível acessar os dados.');
+    const summary = /saldo anterior|pagamento(?:\s+|-)de\s+fatura|subtotal|total da fatura|valor total|total a pagar|encargos do periodo/i;
+    if (table === 'import_rows' && (!options.method || options.method === 'GET') && Array.isArray(body)) return body.filter((row) => !summary.test(String(row.original_description || row.description || row.normalized_description || '')));
     return body;
   };
-  window.clarezaDb = Object.freeze({ select: (table, query = '') => request(table, { query }), insert: (table, rows) => request(table, { method: 'POST', body: rows }), update: (table, query, values) => request(table, { method: 'PATCH', query, body: values }), remove: (table, query) => request(table, { method: 'DELETE', query, prefer: 'return=minimal' }) });
+  const safeRows = (rows) => rows.filter((row) => !/saldo anterior|pagamento(?:\s+|-)de\s+fatura|subtotal|total da fatura|valor total|total a pagar|encargos do periodo/i.test(String(row.original_description || row.description || row.normalized_description || '')));
+  window.clarezaDb = Object.freeze({ select: (table, query = '') => request(table, { query }), insert: (table, rows) => request(table, { method: 'POST', body: table === 'import_rows' ? safeRows(rows) : rows }), update: (table, query, values) => request(table, { method: 'PATCH', query, body: values }), remove: (table, query) => request(table, { method: 'DELETE', query, prefer: 'return=minimal' }) });
 })();
