@@ -13,6 +13,12 @@
     const raw = text(value), br = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
     return br ? `${br[3].length === 2 ? `20${br[3]}` : br[3]}-${br[2].padStart(2, '0')}-${br[1].padStart(2, '0')}` : raw;
   };
+  const completeDate = (value, referenceMonth, fileName) => {
+    const parsed = date(value); if (/^\d{4}-\d{2}-\d{2}$/.test(parsed)) return parsed;
+    const partial = text(value).match(/^(\d{1,2})[\/-](\d{1,2})$/); if (!partial) return '';
+    const year = text(referenceMonth).match(/(20\d{2})/)?.[1] || text(fileName).match(/(20\d{2})/)?.[1];
+    return year ? `${year}-${partial[2].padStart(2, '0')}-${partial[1].padStart(2, '0')}` : '';
+  };
   const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { return null; } };
   const metadata = (fileName, rows) => {
     const source = `${fileName} ${rows.map((row) => Object.values(row).join(' ')).slice(0, 5).join(' ')}`;
@@ -47,7 +53,7 @@
       return { id: crypto.randomUUID(), sourceRow: index + 2, date: date(get('data', 'datadacompra', 'transactiondate')), original, normalized: merchant, merchant, amount: Math.abs(money(get('valor', 'amount', 'preco'))), type, category: text(get('categoria', 'category')) || suggested, subcategory: text(get('subcategoria', 'subcategory')), note: `Importado da planilha ${file.name}, aba ${primary?.name || 'desconhecida'}, linha ${index + 2}.`, confidence: suggested ? 'Média' : 'Não classificado', reviewStatus: 'Pendente' };
     }).filter((row) => row.original || row.amount);
     const meta = metadata(file.name, primary?.rows || []);
-    return { fileName: file.name, size: file.size, importedAt: new Date().toISOString(), ...meta, sheets: sheets.map((sheet) => ({ name: sheet.name, count: sheet.rows.length })), sheetName: primary?.name || '', rows: rows.map((row) => ({ ...row, bank: meta.bank, card: meta.card, referenceMonth: meta.referenceMonth })) };
+    return { fileName: file.name, size: file.size, importedAt: new Date().toISOString(), ...meta, sheets: sheets.map((sheet) => ({ name: sheet.name, count: sheet.rows.length })), sheetName: primary?.name || '', rows: rows.map((row) => ({ ...row, date: completeDate(row.date, meta.referenceMonth, file.name), bank: meta.bank, card: meta.card, referenceMonth: meta.referenceMonth, note: row.date && !completeDate(row.date, meta.referenceMonth, file.name) ? `${row.note} Data incompleta: informe o ano antes de confirmar.` : row.note })) };
   };
   window.ClarezaSpreadsheet = { KEY, read, parse };
 })();

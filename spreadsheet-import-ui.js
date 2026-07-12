@@ -6,6 +6,8 @@
   const saveData = (data) => localStorage.setItem(window.ClarezaSpreadsheet.KEY, JSON.stringify(data));
   const confirmBatch = async (data, card) => {
     const message = card.querySelector('#spreadsheet-message'), button = card.querySelector('#confirm-spreadsheet');
+    const incompleteDates = data.rows.filter((row) => !/^\d{4}-\d{2}-\d{2}$/.test(row.date || '')).length;
+    if (incompleteDates) { message.textContent = `Corrija as ${incompleteDates} linhas com data incompleta antes de confirmar o lote.`; return; }
     if (!window.clarezaDb) { message.textContent = 'Cliente Supabase indisponível.'; return; }
     const uid = userId(); if (!uid) { message.textContent = 'Sua sessão expirou. Entre novamente para enviar a planilha.'; return; }
     if (data.remoteBatchId) { message.textContent = 'Esta planilha já foi enviada ao Supabase neste rascunho.'; return; }
