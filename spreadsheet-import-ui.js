@@ -5,6 +5,8 @@
   const remoteType = (type) => ({ 'Crédito': 'credit', 'Estorno': 'refund', 'Juros': 'interest', 'Tarifa': 'fee', 'Parcela': 'expense', 'Compra': 'expense' }[type] || 'expense');
   const saveData = (data) => localStorage.setItem(window.ClarezaSpreadsheet.KEY, JSON.stringify(data));
   const postgresDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')) ? value : null;
+  const isSummaryRow = (row) => row.isSummary || /saldo anterior|pagamento(?:\s+|-)de\s+fatura|subtotal|total da fatura|valor total|total a pagar|encargos do periodo/i.test(String(row.original || ''));
+  const importableRows = (rows) => rows.filter((row) => !isSummaryRow(row));
   const confirmBatch = async (data, card) => {
     const message = card.querySelector('#spreadsheet-message'), button = card.querySelector('#confirm-spreadsheet');
     if (!window.clarezaDb) { message.textContent = 'Cliente Supabase indisponível.'; return; }
