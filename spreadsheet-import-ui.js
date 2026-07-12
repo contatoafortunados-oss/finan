@@ -4,12 +4,14 @@
   const userId = () => { try { const token = JSON.parse(sessionStorage.getItem('clareza_supabase_session') || 'null')?.access_token; return token ? JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).sub : null; } catch { return null; } };
   const remoteType = (type) => ({ 'Crédito': 'credit', 'Estorno': 'refund', 'Juros': 'interest', 'Tarifa': 'fee', 'Parcela': 'expense', 'Compra': 'expense' }[type] || 'expense');
   const saveData = (data) => localStorage.setItem(window.ClarezaSpreadsheet.KEY, JSON.stringify(data));
+  const postgresDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')) ? value : null;
   const confirmBatch = async (data, card) => {
     const message = card.querySelector('#spreadsheet-message'), button = card.querySelector('#confirm-spreadsheet');
     if (!window.clarezaDb) { message.textContent = 'Cliente Supabase indisponível.'; return; }
     const uid = userId(); if (!uid) { message.textContent = 'Sua sessão expirou. Entre novamente para enviar a planilha.'; return; }
     if (data.remoteBatchId) { message.textContent = 'Esta planilha já foi enviada ao Supabase neste rascunho.'; return; }
     button.disabled = true; button.textContent = 'Enviando...'; message.textContent = 'Enviando lote e linhas para o Supabase...';
+    data.rows.forEach((row) => { if (!postgresDate(row.date)) { row.sourceDate = row.sourceDate || row.date; row.date = null; } });
     try {
       const batch = (await window.clarezaDb.insert('import_batches', [{ user_id: uid, status: 'approved', file_count: 1, row_count: data.rows.length, imported_count: data.rows.length }]))[0];
       const fileHash = `browser-${data.size}-${data.importedAt}`;
